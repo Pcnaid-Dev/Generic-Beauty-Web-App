@@ -6,26 +6,14 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
-import { generateEditedImage, generateFilteredImage, generateBackgroundChange, detectFaces, type Face, detectPeople, type Person, generateSuggestions } from './services/geminiService';
+import { generateEditedImage, generateFilteredImage, generateBackgroundChange, detectFaces, type Face, detectPeople, type Person } from './services/geminiService';
 import Header from './components/Header';
 import Spinner from './components/Spinner';
-import LightAndColorPanel from './components/LightAndColorPanel';
-import CropPanel from './components/CropPanel';
 import StartScreen from './components/StartScreen';
-import LooksPanel from './components/LooksPanel';
-import PortraitPanel from './components/PortraitPanel';
-import MakeupPanel from './components/MakeupPanel';
-import HairPanel from './components/HairPanel';
-import BodyPanel from './components/BodyPanel';
-import BackgroundPanel from './components/BackgroundPanel';
-import LayersPanel from './components/LayersPanel';
-import MaskingCanvas from './components/MaskingCanvas';
-import MaskingToolbar from './components/MaskingToolbar';
-import SuggestionsPanel from './components/SuggestionsPanel';
-import ImpressionsPanel from './components/ImpressionsPanel';
-import ExpressionsPanel from './components/ExpressionsPanel';
-import AgePanel from './components/AgePanel';
-import Sidebar from './components/Sidebar';
+import Sidebar, { sections, getSectionForTab, SectionId, TabId } from './components/Sidebar';
+import EditsStackPanel from './components/EditsStackPanel';
+import QuickFixesPanel from './components/QuickFixesPanel';
+import ToolPanel from './components/ToolPanel';
 
 // Helper to convert a data URL string to a File object
 const dataURLtoFile = (dataurl: string, filename: string): File => {
@@ -43,8 +31,6 @@ const dataURLtoFile = (dataurl: string, filename: string): File => {
     }
     return new File([u8arr], filename, {type:mime});
 }
-
-export type Tab = 'looks' | 'impressions' | 'portrait' | 'expressions' | 'age' | 'makeup' | 'hair' | 'body' | 'background' | 'light_color' | 'crop';
 
 export interface EditLayer {
     id: string;
@@ -70,15 +56,14 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<Tab>('looks');
-  
+  const [activeSectionId, setActiveSectionId] = useState<SectionId>('presets');
+  const [activeTabId, setActiveTabId] = useState<TabId>('looks');
+
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const [aspect, setAspect] = useState<number | undefined>();
   
   const [isComparing, setIsComparing] = useState<boolean>(false);
-  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState(false);
-  const [globalIntensity, setGlobalIntensity] = useState(70);
+  const [isEditsStackOpen, setIsEditsStackOpen] = useState(false);
 
   // Advanced editing state
   const [detectedFaces, setDetectedFaces] = useState<Face[]>([]);
@@ -160,7 +145,8 @@ const App: React.FC = () => {
     setLayers(initialLayers);
     setHistory([initialLayers]);
     setHistoryIndex(0);
-    setActiveTab('looks');
+    setActiveSectionId('presets');
+    setActiveTabId('looks');
     setDetectedFaces([]);
     setSelectedFace(null);
     setIsMasking(false);
@@ -239,7 +225,6 @@ const App: React.FC = () => {
         const adjustedImageUrl = await generateBackgroundChange(imageToEdit, suggestionPrompt);
         const newImageFile = dataURLtoFile(adjustedImageUrl, `suggested-${Date.now()}.png`);
         addLayer(newImageFile, `Suggestion: ${suggestionPrompt.substring(0, 20)}...`, { type: 'suggestion', prompt: suggestionPrompt });
-    // FIX: A typo 'aodn' was here instead of '{' for the catch block, causing a cascade of errors.
     } catch (err) {
         setError(`Failed to apply the suggestion. ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
@@ -388,19 +373,14 @@ const App: React.FC = () => {
       handleImageUpload(files[0]);
     }
   };
-
-  const handleSetAspect = (aspect: number | undefined) => {
-      setAspect(aspect);
-      if (imgRef.current && aspect) {
-          const { width, height } = imgRef.current;
-          const newCrop = centerCrop(
-              makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
-              width,
-              height
-          );
-          setCrop(newCrop);
-      }
-  };
+  
+  const handleTabSelect = (tabId: TabId) => {
+    const newSection = getSectionForTab(tabId);
+    if (newSection) {
+      setActiveSectionId(newSection.id);
+      setActiveTabId(tabId);
+    }
+  }
 
   // Effect to calculate the rendered image dimensions for accurate bounding box placement
   useEffect(() => {
@@ -409,7 +389,6 @@ const App: React.FC = () => {
         const { naturalWidth, naturalHeight } = imgRef.current;
         const { width: containerWidth, height: containerHeight } = imageContainerRef.current.getBoundingClientRect();
 
-        // Don't calculate if image metadata isn't loaded yet
         if (naturalWidth === 0 || naturalHeight === 0) return;
 
         const scale = Math.min(containerWidth / naturalWidth, containerHeight / naturalHeight);
@@ -423,11 +402,7 @@ const App: React.FC = () => {
     };
     
     const imageElement = imgRef.current;
-
-    // Run calculation once image is loaded, and on every window resize
     if (imageElement) {
-        // The 'load' event might have already fired if the image was cached.
-        // The 'complete' property checks for this.
         if (imageElement.complete) {
             calculateRenderState();
         } else {
@@ -448,9 +423,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const currentImage = layers[layers.length - 1]?.image;
-    const isFaceTabActive = ['portrait', 'expressions', 'age'].includes(activeTab);
+    const currentSection = sections.find(s => s.id === activeSectionId);
+    const isFaceSectionActive = currentSection?.id === 'face';
 
-    if (isFaceTabActive && currentImage && detectedFaces.length === 0) {
+    if (isFaceSectionActive && currentImage && detectedFaces.length === 0) {
       const performDetection = async () => {
         setIsLoading(true);
         setError(null);
@@ -467,14 +443,13 @@ const App: React.FC = () => {
         }
       };
       performDetection();
-    } else if (!isFaceTabActive) {
-      // Clear faces if we navigate away from the portrait tab
+    } else if (!isFaceSectionActive) {
       if(detectedFaces.length > 0) {
         setDetectedFaces([]);
         setSelectedFace(null);
       }
     }
-  }, [activeTab, layers, detectedFaces.length]);
+  }, [activeSectionId, layers, detectedFaces.length]);
   
   const handleSelectFace = (direction: 'next' | 'prev') => {
     if (detectedFaces.length === 0 || !selectedFace) return;
@@ -525,7 +500,6 @@ const App: React.FC = () => {
         if (peopleToActuallyRemove.length > 0) {
             handleApplyBackgroundChange('Remove the selected people from the image.', peopleToActuallyRemove);
         } else {
-            // Cancel the mode if no one is selected
             setIsPersonRemovalMode(false);
             setDetectedPeople([]);
             setPeopleToRemove([]);
@@ -559,7 +533,6 @@ const App: React.FC = () => {
             {layers.map((layer, index) => {
                 const imageUrl = layerImageUrls.get(layer.id);
                 if (!layer.isVisible || !imageUrl) return null;
-                // For compare mode, only show the original image layer
                 if (isComparing && index > 0) return null;
 
                 return (
@@ -572,25 +545,13 @@ const App: React.FC = () => {
                             opacity: layer.opacity / 100,
                             zIndex: index,
                         }}
-                        ref={index === 0 ? imgRef : null} // a ref to the base image for calculations
+                        ref={index === 0 ? imgRef : null}
                     />
                 );
             })}
         </div>
     );
     
-    const cropImageElement = imageToDisplayForCrop ? (
-      <img 
-        ref={imgRef}
-        key={`crop-${imageToDisplayForCrop}`}
-        src={imageToDisplayForCrop} 
-        alt="Crop this image"
-        className="w-full h-auto object-contain max-h-[70vh] rounded-xl"
-      />
-    ) : null;
-
-    const showIntensitySlider = ['looks', 'impressions', 'makeup'].includes(activeTab);
-
     const getBoxStyle = (box: {x: number, y: number, width: number, height: number}): React.CSSProperties => {
         if (!imgRef.current || !imageRenderState) {
             return { display: 'none' };
@@ -619,41 +580,28 @@ const App: React.FC = () => {
             {isLoading && (
                 <div className="absolute inset-0 bg-black/70 z-50 flex flex-col items-center justify-center gap-4 animate-fade-in">
                     <Spinner />
-                    <p className="text-gray-300">AI is working its magic...</p>
+                    <p className="text-gray-300">Applying edit...</p>
+                    <button className="text-xs text-gray-400 hover:text-white" onClick={() => setIsLoading(false)}>Cancel</button>
                 </div>
             )}
             
-            {activeTab === 'crop' ? (
+            {activeTabId === 'crop' && imageToDisplayForCrop ? (
               <ReactCrop 
                 crop={crop} 
                 onChange={c => setCrop(c)} 
                 onComplete={c => setCompletedCrop(c)}
-                aspect={aspect}
+                aspect={16/9}
                 className="max-h-[70vh]"
               >
-                {cropImageElement}
+                 <img 
+                    ref={imgRef}
+                    src={imageToDisplayForCrop} 
+                    alt="Crop this image"
+                    className="w-full h-auto object-contain max-h-[70vh] rounded-xl"
+                  />
               </ReactCrop>
             ) : imageDisplay }
             
-            {isMasking && imgRef.current && (
-                <>
-                    <MaskingCanvas 
-                        ref={maskingCanvasRef}
-                        imageElement={imgRef.current}
-                        mode={maskMode}
-                        brushSize={brushSize}
-                    />
-                    <MaskingToolbar
-                        mode={maskMode}
-                        onModeChange={setMaskMode}
-                        brushSize={brushSize}
-                        onBrushSizeChange={setBrushSize}
-                        onApply={handleApplyMask}
-                        onCancel={() => setIsMasking(false)}
-                    />
-                </>
-            )}
-
             {selectedFace && !isMasking && (
                 <div
                     className="border-4 border-blue-500 rounded-md pointer-events-none box-border shadow-lg"
@@ -670,79 +618,32 @@ const App: React.FC = () => {
             ))}
         </div>
         
-        <SuggestionsPanel
+        <QuickFixesPanel
           originalLayer={layers[0] ?? null}
           onApplySuggestion={handleApplySuggestion}
           isLoading={isLoading}
         />
-        
-        {showIntensitySlider && (
-             <div className="w-full max-w-md mx-auto flex flex-col gap-2 animate-fade-in">
-                <label htmlFor="intensity" className="text-sm font-medium text-gray-300 flex justify-between">
-                    <span>Global Intensity</span>
-                    <span className="font-bold text-blue-400">{globalIntensity}%</span>
-                </label>
-                <input
-                    id="intensity"
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={globalIntensity}
-                    onChange={(e) => setGlobalIntensity(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    disabled={isLoading}
-                />
-            </div>
-        )}
-        
-        <div className="w-full">
-            {activeTab === 'looks' && <LooksPanel onApplyAdjustment={handleApplyGlobalAdjustment} isLoading={isLoading} intensity={globalIntensity} />}
-            {activeTab === 'impressions' && <ImpressionsPanel onApplyAdjustment={handleApplyGlobalAdjustment} isLoading={isLoading} intensity={globalIntensity} />}
-            {activeTab === 'portrait' && (
-                <PortraitPanel
-                    onGenerate={handleGenerate}
-                    isLoading={isLoading}
-                    detectedFaces={detectedFaces}
-                    selectedFace={selectedFace}
-                    onSelectFace={handleSelectFace}
-                    onStartMasking={() => setIsMasking(true)}
-                />
-            )}
-            {activeTab === 'expressions' && (
-                <ExpressionsPanel
-                    onGenerate={handleGenerate}
-                    isLoading={isLoading}
-                    detectedFaces={detectedFaces}
-                    selectedFace={selectedFace}
-                    onSelectFace={handleSelectFace}
-                />
-            )}
-            {activeTab === 'age' && (
-                <AgePanel
-                    onGenerate={handleGenerate}
-                    isLoading={isLoading}
-                    detectedFaces={detectedFaces}
-                    selectedFace={selectedFace}
-                    onSelectFace={handleSelectFace}
-                />
-            )}
-            {activeTab === 'makeup' && <MakeupPanel onApplyAdjustment={handleGenerate} isLoading={isLoading} intensity={globalIntensity} />}
-            {activeTab === 'hair' && <HairPanel onApplyAdjustment={handleGenerate} isLoading={isLoading} />}
-            {activeTab === 'body' && <BodyPanel onApplyAdjustment={handleGenerate} isLoading={isLoading}/>}
-            {activeTab === 'background' && 
-                <BackgroundPanel 
-                    onBackgroundChange={handleApplyBackgroundChange} 
-                    onDetectPeople={handleDetectPeople}
-                    isPersonRemovalMode={isPersonRemovalMode}
-                    onConfirmRemovePeople={handleConfirmRemovePeople}
-                    onCancelRemovePeople={() => { setIsPersonRemovalMode(false); setDetectedPeople([]); setPeopleToRemove([]); }}
-                    isLoading={isLoading} 
-                />}
-            {activeTab === 'light_color' && <LightAndColorPanel onApplyAdjustment={handleApplyGlobalAdjustment} onApplyFilter={handleApplyFilter} isLoading={isLoading} />}
-            {activeTab === 'crop' && <CropPanel onApplyCrop={handleApplyCrop} onSetAspect={handleSetAspect} isLoading={isLoading} isCropping={!!completedCrop?.width && completedCrop.width > 0} />}
 
-        </div>
-
+        <ToolPanel 
+          activeTabId={activeTabId}
+          onTabSelect={handleTabSelect}
+          isLoading={isLoading}
+          // Pass all handlers and state down
+          onGenerate={handleGenerate}
+          onApplyGlobalAdjustment={handleApplyGlobalAdjustment}
+          onApplyFilter={handleApplyFilter}
+          onApplyBackgroundChange={handleApplyBackgroundChange}
+          onDetectPeople={handleDetectPeople}
+          isPersonRemovalMode={isPersonRemovalMode}
+          onConfirmRemovePeople={handleConfirmRemovePeople}
+          onCancelRemovePeople={() => { setIsPersonRemovalMode(false); setDetectedPeople([]); setPeopleToRemove([]); }}
+          onApplyCrop={handleApplyCrop}
+          isCropping={!!completedCrop?.width && completedCrop.width > 0}
+          detectedFaces={detectedFaces}
+          selectedFace={selectedFace}
+          onSelectFace={handleSelectFace}
+          onStartMasking={() => setIsMasking(true)}
+        />
       </div>
     );
   };
@@ -757,26 +658,32 @@ const App: React.FC = () => {
         onRedo={handleRedo}
         onCompareStart={() => setIsComparing(true)}
         onCompareEnd={() => setIsComparing(false)}
-        onLayersClick={() => setIsLayersPanelOpen(true)}
+        onHistoryClick={() => setIsEditsStackOpen(true)}
         onReset={handleReset}
         onUploadNew={handleUploadNew}
         onDownload={handleDownload}
+        onExportClick={() => handleTabSelect('export')}
       />
-      <div className="flex flex-grow">
-        {originalImage && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />}
-        <main className={`flex-grow w-full p-4 md:p-6 flex justify-center ${originalImage ? 'items-start' : 'items-center'}`}>
+      <div className="flex flex-grow h-[calc(100vh-61px)]">
+        {originalImage && (
+            <Sidebar 
+                activeTabId={activeTabId} 
+                onTabSelect={handleTabSelect} 
+            />
+        )}
+        <main className={`flex-grow w-full p-4 md:p-6 flex justify-center overflow-y-auto ${originalImage ? 'items-start' : 'items-center'}`}>
             {renderContent()}
         </main>
+        {isEditsStackOpen && (
+          <EditsStackPanel
+            layers={layers}
+            onToggleVisibility={handleToggleLayerVisibility}
+            onSetOpacity={handleSetLayerOpacity}
+            onReorder={handleReorderLayers}
+            onClose={() => setIsEditsStackOpen(false)}
+          />
+        )}
       </div>
-      {isLayersPanelOpen && (
-        <LayersPanel
-          layers={layers}
-          onToggleVisibility={handleToggleLayerVisibility}
-          onSetOpacity={handleSetLayerOpacity}
-          onReorder={handleReorderLayers}
-          onClose={() => setIsLayersPanelOpen(false)}
-        />
-      )}
     </div>
   );
 };

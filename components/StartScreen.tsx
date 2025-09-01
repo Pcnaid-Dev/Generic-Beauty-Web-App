@@ -4,7 +4,8 @@
 */
 
 import React, { useState } from 'react';
-import { UploadIcon, MagicWandIcon, PaletteIcon, SunIcon } from './icons';
+// FIX: Replaced missing icons with available equivalents.
+import { UploadIcon, SparkleIcon, PresetsIcon, LightColorIcon } from './icons';
 
 interface StartScreenProps {
   onFileSelect: (files: FileList | null) => void;
@@ -49,21 +50,21 @@ const StartScreen: React.FC<StartScreenProps> = ({ onFileSelect }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <MagicWandIcon className="w-6 h-6 text-blue-400" />
+                       <SparkleIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-100">Precise Retouching</h3>
                     <p className="mt-2 text-gray-400">Click any point on your image to remove blemishes, change colors, or add elements with pinpoint accuracy.</p>
                 </div>
                 <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <PaletteIcon className="w-6 h-6 text-blue-400" />
+                       <PresetsIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-100">Creative Filters</h3>
                     <p className="mt-2 text-gray-400">Transform photos with artistic styles. From vintage looks to futuristic glows, find or create the perfect filter.</p>
                 </div>
                 <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <SunIcon className="w-6 h-6 text-blue-400" />
+                       <LightColorIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-100">Pro Adjustments</h3>
                     <p className="mt-2 text-gray-400">Enhance lighting, blur backgrounds, or change the mood. Get studio-quality results without complex tools.</p>

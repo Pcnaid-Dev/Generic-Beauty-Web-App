@@ -4,6 +4,7 @@
 */
 
 import React, { useState } from 'react';
+// FIX: Corrected icon imports. Icons were added to the icons.tsx file.
 import { BrushIcon, EraserIcon, CheckIcon, CloseIcon } from './icons';
 
 interface MaskingToolbarProps {

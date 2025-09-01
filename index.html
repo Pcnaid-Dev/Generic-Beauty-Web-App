@@ -22,6 +22,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://esm.sh/react-image-crop@^11.0.6/dist/ReactCrop.css" />
 <style>
+html, body, #root {
+    height: 100%;
+    overflow: hidden;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #090A0F;
@@ -31,7 +36,6 @@ body {
         radial-gradient(ellipse at 50% 50%, rgba(50, 80, 150, 0.3) 0%, rgba(50, 80, 150, 0) 70%),
         radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
     background-size: 250% 250%;
-    min-height: 100vh;
     animation: move-nebula 200s ease-in-out infinite alternate;
 }
 
