@@ -725,3 +725,26 @@ const App: React.FC = () => {
                     <MaskingToolbar
                         mode={maskMode}
                         onModeChange={setMaskMode}
+                        brushSize={brushSize}
+                        onBrushSizeChange={setBrushSize}
+                        onApply={(prompt: string) => {
+                            // Apply masking logic here
+                            setIsMasking(false);
+                        }}
+                        onCancel={() => setIsMasking(false)}
+                    />
+                </>
+             )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-screen bg-gradient-to-br from-gray-900 to-black text-white flex flex-col overflow-hidden">
+      {renderMainContent()}
+    </div>
+  );
+};
+
+export default App;
