@@ -663,28 +663,6 @@ const App: React.FC = () => {
             })}
         </div>
     );
-    
-    const getBoxStyle = (box: {x: number, y: number, width: number, height: number}): React.CSSProperties => {
-        if (!imgRef.current || !imageRenderState) {
-            return { display: 'none' };
-        }
-        
-        const { naturalWidth, naturalHeight } = imgRef.current;
-        const { renderedWidth, renderedHeight, offsetX, offsetY } = imageRenderState;
-
-        const left = (box.x / naturalWidth) * renderedWidth + offsetX;
-        const top = (box.y / naturalHeight) * renderedHeight + offsetY;
-        const width = (box.width / naturalWidth) * renderedWidth;
-        const height = (box.height / naturalHeight) * renderedHeight;
-
-        return {
-            position: 'absolute',
-            left: `${left}px`,
-            top: `${top}px`,
-            width: `${width}px`,
-            height: `${height}px`,
-        };
-    };
 
     return (
       <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-6 gap-4 animate-fade-in">
@@ -725,3 +703,78 @@ const App: React.FC = () => {
                     <MaskingToolbar
                         mode={maskMode}
                         onModeChange={setMaskMode}
+                        brushSize={brushSize}
+                        onBrushSizeChange={setBrushSize}
+                        onApply={(prompt) => {
+                            console.log('Apply masking with prompt:', prompt);
+                            setIsMasking(false);
+                        }}
+                        onCancel={() => setIsMasking(false)}
+                    />
+                </>
+            )}
+        </div>
+      </div>
+    );
+  };
+
+  const getBoxStyle = (box: {x: number, y: number, width: number, height: number}): React.CSSProperties => {
+        if (!imgRef.current || !imageRenderState) {
+            return { display: 'none' };
+        }
+        
+        const { naturalWidth, naturalHeight } = imgRef.current;
+        const { renderedWidth, renderedHeight, offsetX, offsetY } = imageRenderState;
+
+        const left = (box.x / naturalWidth) * renderedWidth + offsetX;
+        const top = (box.y / naturalHeight) * renderedHeight + offsetY;
+        const width = (box.width / naturalWidth) * renderedWidth;
+        const height = (box.height / naturalHeight) * renderedHeight;
+
+        return {
+            position: 'absolute',
+            left: `${left}px`,
+            top: `${top}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+        };
+    };
+
+    return (
+      <div className="w-screen h-screen flex flex-col bg-black text-white overflow-hidden">
+        <Header 
+          isComparing={isComparing} 
+          onCompareToggle={() => setIsComparing(!isComparing)}
+          onExport={() => {}}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyIndex > 0}
+          canRedo={historyIndex < history.length - 1}
+        />
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar 
+            activeSection={getSectionForTab(activeTabId)}
+            activeTab={activeTabId}
+            onTabChange={setActiveTabId}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
+          <div className="flex-1 overflow-hidden">
+            {renderMainContent()}
+          </div>
+          {isToolPanelVisible && (
+            <ToolPanel
+              activeTab={activeTabId}
+              onTabChange={setActiveTabId}
+              width={toolPanelWidth}
+              onWidthChange={setToolPanelWidth}
+              layoutMode={layoutMode}
+              onClose={() => setIsToolPanelVisible(false)}
+            />
+          )}
+        </div>
+      </div>
+    );
+};
+
+export default App;
