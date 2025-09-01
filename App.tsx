@@ -14,6 +14,7 @@ import StartScreen from './components/StartScreen';
 import Sidebar, { sections, getSectionForTab, SectionId, TabId } from './components/Sidebar';
 import EditsStackPanel from './components/EditsStackPanel';
 import QuickFixesPanel from './components/QuickFixesPanel';
+import SuggestionsPanel from './components/SuggestionsPanel';
 import ToolPanel from './components/ToolPanel';
 
 // Helper to convert a data URL string to a File object
@@ -730,6 +731,12 @@ const App: React.FC = () => {
         </div>
         
         <QuickFixesPanel
+          originalLayer={layers[0] ?? null}
+          onApplySuggestion={handleApplySuggestion}
+          isLoading={isLoading}
+        />
+        
+        <SuggestionsPanel
           originalLayer={layers[0] ?? null}
           onApplySuggestion={handleApplySuggestion}
           isLoading={isLoading}
