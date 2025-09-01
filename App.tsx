@@ -15,6 +15,8 @@ import Sidebar, { sections, getSectionForTab, SectionId, TabId } from './compone
 import EditsStackPanel from './components/EditsStackPanel';
 import QuickFixesPanel from './components/QuickFixesPanel';
 import ToolPanel from './components/ToolPanel';
+import MaskingCanvas from './components/MaskingCanvas';
+import MaskingToolbar from './components/MaskingToolbar';
 
 // Helper to convert a data URL string to a File object
 const dataURLtoFile = (dataurl: string, filename: string): File => {
@@ -367,7 +369,6 @@ const App: React.FC = () => {
           completedCrop.x * scaleX,
           completedCrop.y * scaleY,
           completedCrop.width * scaleX,
-          // FIX: Corrected a typo from 'completed-crop' to 'completedCrop'.
           completedCrop.height * scaleY,
           0,
           0,
@@ -656,7 +657,7 @@ const App: React.FC = () => {
                             opacity: layer.opacity / 100,
                             zIndex: index,
                         }}
-                        ref={index === 0 ? imgRef : null}
+                        ref={index === layers.length - 1 ? imgRef : null}
                     />
                 );
             })}
@@ -712,103 +713,15 @@ const App: React.FC = () => {
                   />
               </ReactCrop>
             ) : imageDisplay }
-            
-            {selectedFace && !isMasking && (
-                <div
-                    className="border-4 border-blue-500 rounded-md pointer-events-none box-border shadow-lg"
-                    style={getBoxStyle(selectedFace.box)}
-                />
-            )}
-            {isPersonRemovalMode && detectedPeople.map(person => (
-                 <div
-                    key={person.id}
-                    className={`rounded-md box-border shadow-lg cursor-pointer transition-colors ${peopleToRemove.includes(person.id) ? 'bg-red-500/50 border-4 border-red-400' : 'bg-transparent border-4 border-yellow-400'}`}
-                    style={getBoxStyle(person.box)}
-                    onClick={() => togglePersonForRemoval(person.id)}
-                />
-            ))}
-        </div>
-        
-        <QuickFixesPanel
-          originalLayer={layers[0] ?? null}
-          onApplySuggestion={handleApplySuggestion}
-          isLoading={isLoading}
-        />
-      </div>
-    );
-  };
-  
-  return (
-    <div className="min-h-screen text-gray-100 flex flex-col bg-transparent">
-      <Header 
-        hasImage={!!originalImage}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onCompareStart={() => setIsComparing(true)}
-        onCompareEnd={() => setIsComparing(false)}
-        onHistoryClick={() => setIsEditsStackOpen(true)}
-        onReset={handleReset}
-        onUploadNew={handleUploadNew}
-        onDownload={handleDownload}
-        onExportClick={() => handleTabSelect('export')}
-        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
-        isPanelOpen={isToolPanelVisible}
-        isPanelDocked={layoutMode === 'docked'}
-        onTogglePanel={() => setIsToolPanelVisible(prev => !prev)}
-      />
-      <div className={`app-body ${originalImage ? '' : 'content-centered'}`}>
-        {originalImage && (
-            <Sidebar 
-                isCollapsed={isSidebarCollapsed}
-                activeTabId={activeTabId} 
-                onTabSelect={handleTabSelect} 
-            />
-        )}
 
-        <main className="canvas">
-            {renderMainContent()}
-        </main>
-        
-        {originalImage && isToolPanelVisible && (
-             <ToolPanel 
-              activeTabId={activeTabId}
-              onTabSelect={handleTabSelect}
-              isLoading={isLoading}
-              onGenerate={handleGenerate}
-              onApplyGlobalAdjustment={handleApplyGlobalAdjustment}
-              onApplyFilter={handleApplyFilter}
-              onApplyBackgroundChange={handleApplyBackgroundChange}
-              onDetectPeople={handleDetectPeople}
-              isPersonRemovalMode={isPersonRemovalMode}
-              onConfirmRemovePeople={handleConfirmRemovePeople}
-              onCancelRemovePeople={() => { setIsPersonRemovalMode(false); setDetectedPeople([]); setPeopleToRemove([]); }}
-              onApplyCrop={handleApplyCrop}
-              isCropping={!!completedCrop?.width && completedCrop.width > 0}
-              detectedFaces={detectedFaces}
-              selectedFace={selectedFace}
-              onSelectFace={handleSelectFace}
-              onStartMasking={() => setIsMasking(true)}
-              layoutMode={layoutMode}
-              width={toolPanelWidth}
-              onWidthChange={handlePanelWidthChange}
-              onClose={() => setIsToolPanelVisible(false)}
-            />
-        )}
-
-        {isEditsStackOpen && (
-          <EditsStackPanel
-            layers={layers}
-            onToggleVisibility={handleToggleLayerVisibility}
-            onSetOpacity={handleSetLayerOpacity}
-            onReorder={handleReorderLayers}
-            onClose={() => setIsEditsStackOpen(false)}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default App;
+             {isMasking && imgRef.current && (
+                <>
+                    <MaskingCanvas 
+                        ref={maskingCanvasRef}
+                        imageElement={imgRef.current}
+                        mode={maskMode}
+                        brushSize={brushSize}
+                    />
+                    <MaskingToolbar
+                        mode={maskMode}
+                        onModeChange={setMaskMode}

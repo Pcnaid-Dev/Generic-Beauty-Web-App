@@ -13,8 +13,8 @@ import PresetsPanel from './PresetsPanel';
 import FacePanel from './FacePanel';
 import BodyPanel from './BodyPanel';
 import ScenePanel from './ScenePanel';
-// import CanvasPanel from './CanvasPanel';
-// import ExportPanel from './ExportPanel';
+import CropPanel from './CropPanel';
+import ExportPanel from './ExportPanel';
 
 interface ToolPanelProps {
   activeTabId: TabId;
@@ -38,6 +38,7 @@ interface ToolPanelProps {
   width: number;
   onWidthChange: (newWidth: number) => void;
   onClose: () => void;
+  onDownload: () => void;
 }
 
 const ToolPanel: React.FC<ToolPanelProps> = (props) => {
@@ -118,11 +119,11 @@ const ToolPanel: React.FC<ToolPanelProps> = (props) => {
                             onApplyGlobalAdjustment={props.onApplyGlobalAdjustment}
                             onApplyFilter={props.onApplyFilter}
                             isLoading={props.isLoading}
-                        />
-            // case 'canvas':
-            //     return <CanvasPanel activeTabId={activeTabId} onTabSelect={onTabSelect} {...props} />;
-            // case 'export':
-            //     return <ExportPanel />;
+                        />;
+            case 'canvas':
+                return <CropPanel />;
+            case 'export':
+                return <ExportPanel onDownload={props.onDownload} isLoading={props.isLoading} />;
             default:
                 return <div className="p-4 text-center">Coming soon...</div>
         }
