@@ -75,6 +75,7 @@ const BackgroundTools: React.FC<Pick<ScenePanelProps, 'onBackgroundChange' | 'on
   const [customPrompt, setCustomPrompt] = useState('');
   const presets = [
     { name: 'Blur Background', prompt: 'Apply a realistic depth-of-field effect, making the background blurry.' },
+    { name: 'Bokeh Blur', prompt: 'Apply a realistic, creamy bokeh blur effect to the background, keeping the main subject in sharp focus. The blur should have beautiful, soft, circular highlights.' },
     { name: 'Sunset Sky', prompt: 'Replace the sky with a dramatic, golden-hour sunset sky.' },
     { name: 'Studio Backdrop', prompt: 'Replace the background with a clean, professional grey studio backdrop.' },
     { name: 'Forest Scene', prompt: 'Replace the background with a lush, green forest scene.'},

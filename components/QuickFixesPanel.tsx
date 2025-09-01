@@ -43,7 +43,7 @@ const QuickFixesPanel: React.FC<QuickFixesPanelProps> = ({ originalLayer, onAppl
   }
 
   return (
-    <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-sm mb-4">
+    <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-4 flex flex-col gap-3 animate-fade-in backdrop-blur-sm shadow-lg">
         <h3 className="text-base font-semibold text-center text-gray-300 flex items-center justify-center gap-2">
             <SparkleIcon className="w-5 h-5 text-blue-400" />
             <span>AI Quick Fixes</span>

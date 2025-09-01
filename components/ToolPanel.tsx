@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { sections, getSectionForTab, TabId } from './Sidebar';
 import { type Face, type Person } from '../services/geminiService';
-import { EyeIcon } from './icons';
+import { CloseIcon } from './icons';
 
 // Import tool UIs
 import PresetsPanel from './PresetsPanel';
@@ -34,17 +34,52 @@ interface ToolPanelProps {
   selectedFace: Face | null;
   onSelectFace: (direction: 'next' | 'prev') => void;
   onStartMasking: () => void;
+  layoutMode: 'docked' | 'overlay' | 'bottom-sheet';
+  width: number;
+  onWidthChange: (newWidth: number) => void;
+  onClose: () => void;
 }
 
 const ToolPanel: React.FC<ToolPanelProps> = (props) => {
-    const { activeTabId, onTabSelect } = props;
+    const { activeTabId, onTabSelect, layoutMode, width, onWidthChange, onClose } = props;
     const [strength, setStrength] = useState(70);
+    const [isResizing, setIsResizing] = useState(false);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     const activeSection = getSectionForTab(activeTabId);
     const activeTab = activeSection?.tabs.find(t => t.id === activeTabId);
 
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing || !panelRef.current) return;
+            // For horizontal resize
+            const newWidth = window.innerWidth - e.clientX;
+            onWidthChange(newWidth);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp, { once: true });
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing, onWidthChange]);
+
+
     if (!activeSection || !activeTab) {
-        return <div className="w-full text-center p-8">Error: Tool not found.</div>;
+        return <div className="tool-panel p-8 text-center">Error: Tool not found.</div>;
     }
 
     const renderContent = () => {
@@ -72,7 +107,6 @@ const ToolPanel: React.FC<ToolPanelProps> = (props) => {
             case 'body':
                 return <BodyPanel onApplyAdjustment={props.onApplyGlobalAdjustment} isLoading={props.isLoading} />;
             case 'scene':
-                // FIX: Pass props explicitly to ScenePanel to fix type errors
                 return <ScenePanel 
                             activeTabId={activeTabId as 'background' | 'light_color'}
                             onTabSelect={onTabSelect}
@@ -95,26 +129,35 @@ const ToolPanel: React.FC<ToolPanelProps> = (props) => {
     };
 
     const needsStrengthSlider = activeSection.id === 'presets' || activeTabId === 'makeup';
+    const hasApplyButton = activeTabId === 'crop';
+    
+    const panelStyle = layoutMode !== 'bottom-sheet' ? { width: `${width}px` } : {};
+    const panelClasses = `tool-panel layout-${layoutMode}`;
 
     return (
-        <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-6 flex flex-col gap-4 animate-fade-in backdrop-blur-sm">
-            {/* Breadcrumb Header */}
-            <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-gray-400">
-                    {activeSection.label} <span className="text-gray-500">/</span> <span className="text-white">{activeTab.label}</span>
-                </p>
-                <button className="text-xs font-semibold text-gray-400 hover:text-white">Reset</button>
-            </div>
-            
-            {/* Main Content */}
-            <div className="flex-grow">
-                {renderContent()}
-            </div>
+        <aside ref={panelRef} className={panelClasses} style={panelStyle}>
+            {layoutMode !== 'bottom-sheet' && (
+                <div className="panel-resizer" onMouseDown={handleMouseDown}></div>
+            )}
+            <header className="panel-header">
+                <div>
+                  <div style={{fontSize:14, color:'var(--muted)'}}>{activeSection.label}</div>
+                  <div style={{fontSize:18, fontWeight:700}}>{activeTab.label}</div>
+                </div>
+                 {layoutMode !== 'docked' ? (
+                    <button onClick={onClose} className="p-1 rounded-md hover:bg-white/10"><CloseIcon className="w-5 h-5"/></button>
+                 ) : (
+                    <button className="text-xs font-semibold text-gray-400 hover:text-white">Reset</button>
+                 )}
+            </header>
 
-            {/* Sticky Footer Action Bar */}
-            <div className="border-t border-white/10 pt-4 flex flex-col gap-4">
+            <section className="panel-body">
+                {renderContent()}
+            </section>
+
+            <div className="panel-apply">
                {needsStrengthSlider && (
-                 <div className="w-full flex flex-col gap-2">
+                 <div className="flex-grow">
                     <label htmlFor="strength" className="text-sm font-medium text-gray-300 flex justify-between">
                         <span>Strength</span>
                         <span className="font-bold text-blue-400">{strength}%</span>
@@ -131,16 +174,13 @@ const ToolPanel: React.FC<ToolPanelProps> = (props) => {
                     />
                 </div>
                )}
-                <div className="flex items-center gap-2">
-                    <button className="p-2 rounded-md hover:bg-white/10 text-gray-300" title="Preview (Hold)">
-                        <EyeIcon className="w-5 h-5"/>
-                    </button>
-                    <button className="flex-grow bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-blue-500/40 active:scale-95 disabled:opacity-50">
-                        Apply
-                    </button>
-                </div>
+               {hasApplyButton && (
+                  <button onClick={props.onApplyCrop} disabled={!props.isCropping} className="primary flex-grow">
+                      Apply Crop
+                  </button>
+               )}
             </div>
-        </div>
+        </aside>
     );
 };
 

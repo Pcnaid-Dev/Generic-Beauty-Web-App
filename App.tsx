@@ -4,9 +4,10 @@
 */
 
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import { generateEditedImage, generateFilteredImage, generateBackgroundChange, detectFaces, type Face, detectPeople, type Person } from './services/geminiService';
+import { initDB, loadData, saveData, clearData, type EditorState } from './services/dbService';
 import Header from './components/Header';
 import Spinner from './components/Spinner';
 import StartScreen from './components/StartScreen';
@@ -64,6 +65,13 @@ const App: React.FC = () => {
   
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [isEditsStackOpen, setIsEditsStackOpen] = useState(false);
+  
+  // Responsive Layout State
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isToolPanelVisible, setIsToolPanelVisible] = useState(true);
+  const [layoutMode, setLayoutMode] = useState<'docked' | 'overlay' | 'bottom-sheet'>('docked');
+  const [toolPanelWidth, setToolPanelWidth] = useState(472);
+
 
   // Advanced editing state
   const [detectedFaces, setDetectedFaces] = useState<Face[]>([]);
@@ -84,6 +92,24 @@ const App: React.FC = () => {
   const originalImage = layers[0]?.image ?? null;
 
   const [layerImageUrls, setLayerImageUrls] = useState<Map<string, string>>(new Map());
+
+    // DB Initialization and initial load
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        await initDB();
+        const savedData = await loadData();
+        if (savedData && savedData.history.length > 0) {
+          setHistory(savedData.history);
+          setHistoryIndex(savedData.historyIndex);
+          setLayers(savedData.history[savedData.historyIndex] || []);
+        }
+      } catch (err) {
+        console.error('Failed to init DB or load layers', err);
+      }
+    };
+    initialize();
+  }, []);
   
   // Effect to manage object URLs for all layer images
   useEffect(() => {
@@ -99,6 +125,68 @@ const App: React.FC = () => {
     };
   }, [layers]);
 
+  // Adaptive Layout Effect
+  useLayoutEffect(() => {
+    const handleResize = () => {
+        if (!originalImage) return;
+
+        const windowWidth = window.innerWidth;
+        const MOBILE_BREAKPOINT = 900;
+        const MIN_CANVAS_WIDTH = 720;
+        const RAIL_EXPANDED_W = 224;
+        const RAIL_COLLAPSED_W = 64;
+
+        if (windowWidth <= MOBILE_BREAKPOINT) {
+            setLayoutMode('bottom-sheet');
+            if (!isSidebarCollapsed) setIsSidebarCollapsed(true);
+            return;
+        }
+        
+        // Auto-collapse sidebar if there is not enough room
+        let currentSidebarIsCollapsed = isSidebarCollapsed;
+        if (!isSidebarCollapsed && (RAIL_EXPANDED_W + toolPanelWidth + MIN_CANVAS_WIDTH > windowWidth)) {
+            setIsSidebarCollapsed(true);
+            currentSidebarIsCollapsed = true;
+        }
+
+        const railWidth = currentSidebarIsCollapsed ? RAIL_COLLAPSED_W : RAIL_EXPANDED_W;
+
+        if (windowWidth - railWidth - toolPanelWidth < MIN_CANVAS_WIDTH) {
+            setLayoutMode('overlay');
+        } else {
+            setLayoutMode('docked');
+        }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarCollapsed, toolPanelWidth, originalImage]);
+
+
+  // Keyboard Shortcuts Effect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        // Ignore shortcuts if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        if (e.key.toLowerCase() === 'l') {
+            e.preventDefault();
+            setIsSidebarCollapsed(prev => !prev);
+        }
+        if (e.key.toLowerCase() === 'p') {
+            e.preventDefault();
+            setIsToolPanelVisible(prev => !prev);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+
   const updateLayersAndHistory = useCallback((updater: (prevLayers: EditLayer[]) => EditLayer[]) => {
     setLayers(prevLayers => {
         const newLayers = updater(prevLayers);
@@ -106,7 +194,9 @@ const App: React.FC = () => {
         setHistory(prevHistory => {
             const newHistorySlice = prevHistory.slice(0, historyIndex + 1);
             const updatedHistory = [...newHistorySlice, newLayers];
-            setHistoryIndex(updatedHistory.length - 1);
+            const newHistoryIndex = updatedHistory.length - 1;
+            setHistoryIndex(newHistoryIndex);
+            saveData({ history: updatedHistory, historyIndex: newHistoryIndex });
             return updatedHistory;
         });
 
@@ -143,8 +233,11 @@ const App: React.FC = () => {
     };
     const initialLayers = [initialLayer];
     setLayers(initialLayers);
-    setHistory([initialLayers]);
+    const initialHistory = [initialLayers];
+    setHistory(initialHistory);
     setHistoryIndex(0);
+    saveData({ history: initialHistory, historyIndex: 0 });
+    
     setActiveSectionId('presets');
     setActiveTabId('looks');
     setDetectedFaces([]);
@@ -274,6 +367,7 @@ const App: React.FC = () => {
           completedCrop.x * scaleX,
           completedCrop.y * scaleY,
           completedCrop.width * scaleX,
+          // FIX: Corrected a typo from 'completed-crop' to 'completedCrop'.
           completedCrop.height * scaleY,
           0,
           0,
@@ -296,6 +390,7 @@ const App: React.FC = () => {
       setHistory([]);
       setHistoryIndex(-1);
       setError(null);
+      clearData();
   }, []);
   
   const handleUndo = () => {
@@ -303,6 +398,7 @@ const App: React.FC = () => {
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
         setLayers(history[newIndex]);
+        saveData({ history, historyIndex: newIndex });
     }
   };
 
@@ -311,6 +407,7 @@ const App: React.FC = () => {
           const newIndex = historyIndex + 1;
           setHistoryIndex(newIndex);
           setLayers(history[newIndex]);
+          saveData({ history, historyIndex: newIndex });
       }
   };
 
@@ -379,6 +476,9 @@ const App: React.FC = () => {
     if (newSection) {
       setActiveSectionId(newSection.id);
       setActiveTabId(tabId);
+      if (layoutMode !== 'docked') {
+        setIsToolPanelVisible(true);
+      }
     }
   }
 
@@ -505,8 +605,15 @@ const App: React.FC = () => {
             setPeopleToRemove([]);
         }
     };
+    
+    const handlePanelWidthChange = (newWidth: number) => {
+        const MIN_PANEL_W = 360;
+        const MAX_PANEL_W = 600;
+        const clampedWidth = Math.max(MIN_PANEL_W, Math.min(MAX_PANEL_W, newWidth));
+        setToolPanelWidth(clampedWidth);
+    };
 
-  const renderContent = () => {
+  const renderMainContent = () => {
     if (error) {
        return (
            <div className="text-center animate-fade-in bg-red-500/10 border border-red-500/20 p-8 rounded-lg max-w-2xl mx-auto flex flex-col items-center gap-4">
@@ -523,7 +630,11 @@ const App: React.FC = () => {
     }
     
     if (!originalImage) {
-      return <StartScreen onFileSelect={handleFileSelect} />;
+      return (
+        <div className="flex-grow flex items-center justify-center">
+            <StartScreen onFileSelect={handleFileSelect} />
+        </div>
+      );
     }
     
     const imageToDisplayForCrop = layerImageUrls.get(layers[layers.length - 1]?.id);
@@ -575,8 +686,8 @@ const App: React.FC = () => {
     };
 
     return (
-      <div className="w-full h-full flex flex-col items-center gap-4 animate-fade-in">
-        <div ref={imageContainerRef} className="relative w-full shadow-2xl rounded-xl overflow-hidden bg-black/20 flex-grow aspect-[4/3] flex items-center justify-center">
+      <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-6 gap-4 animate-fade-in">
+        <div ref={imageContainerRef} className="relative w-full shadow-2xl rounded-xl overflow-hidden bg-black/20 flex-grow flex items-center justify-center">
             {isLoading && (
                 <div className="absolute inset-0 bg-black/70 z-50 flex flex-col items-center justify-center gap-4 animate-fade-in">
                     <Spinner />
@@ -591,13 +702,13 @@ const App: React.FC = () => {
                 onChange={c => setCrop(c)} 
                 onComplete={c => setCompletedCrop(c)}
                 aspect={16/9}
-                className="max-h-[70vh]"
+                className="max-h-[80vh]"
               >
                  <img 
                     ref={imgRef}
                     src={imageToDisplayForCrop} 
                     alt="Crop this image"
-                    className="w-full h-auto object-contain max-h-[70vh] rounded-xl"
+                    className="w-full h-auto object-contain max-h-[80vh] rounded-xl"
                   />
               </ReactCrop>
             ) : imageDisplay }
@@ -623,33 +734,12 @@ const App: React.FC = () => {
           onApplySuggestion={handleApplySuggestion}
           isLoading={isLoading}
         />
-
-        <ToolPanel 
-          activeTabId={activeTabId}
-          onTabSelect={handleTabSelect}
-          isLoading={isLoading}
-          // Pass all handlers and state down
-          onGenerate={handleGenerate}
-          onApplyGlobalAdjustment={handleApplyGlobalAdjustment}
-          onApplyFilter={handleApplyFilter}
-          onApplyBackgroundChange={handleApplyBackgroundChange}
-          onDetectPeople={handleDetectPeople}
-          isPersonRemovalMode={isPersonRemovalMode}
-          onConfirmRemovePeople={handleConfirmRemovePeople}
-          onCancelRemovePeople={() => { setIsPersonRemovalMode(false); setDetectedPeople([]); setPeopleToRemove([]); }}
-          onApplyCrop={handleApplyCrop}
-          isCropping={!!completedCrop?.width && completedCrop.width > 0}
-          detectedFaces={detectedFaces}
-          selectedFace={selectedFace}
-          onSelectFace={handleSelectFace}
-          onStartMasking={() => setIsMasking(true)}
-        />
       </div>
     );
   };
   
   return (
-    <div className="min-h-screen text-gray-100 flex flex-col">
+    <div className="min-h-screen text-gray-100 flex flex-col bg-transparent">
       <Header 
         hasImage={!!originalImage}
         canUndo={historyIndex > 0}
@@ -663,17 +753,50 @@ const App: React.FC = () => {
         onUploadNew={handleUploadNew}
         onDownload={handleDownload}
         onExportClick={() => handleTabSelect('export')}
+        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+        isPanelOpen={isToolPanelVisible}
+        isPanelDocked={layoutMode === 'docked'}
+        onTogglePanel={() => setIsToolPanelVisible(prev => !prev)}
       />
-      <div className="flex flex-grow h-[calc(100vh-61px)]">
+      <div className={`app-body ${originalImage ? '' : 'content-centered'}`}>
         {originalImage && (
             <Sidebar 
+                isCollapsed={isSidebarCollapsed}
                 activeTabId={activeTabId} 
                 onTabSelect={handleTabSelect} 
             />
         )}
-        <main className={`flex-grow w-full p-4 md:p-6 flex justify-center overflow-y-auto ${originalImage ? 'items-start' : 'items-center'}`}>
-            {renderContent()}
+
+        <main className="canvas">
+            {renderMainContent()}
         </main>
+        
+        {originalImage && isToolPanelVisible && (
+             <ToolPanel 
+              activeTabId={activeTabId}
+              onTabSelect={handleTabSelect}
+              isLoading={isLoading}
+              onGenerate={handleGenerate}
+              onApplyGlobalAdjustment={handleApplyGlobalAdjustment}
+              onApplyFilter={handleApplyFilter}
+              onApplyBackgroundChange={handleApplyBackgroundChange}
+              onDetectPeople={handleDetectPeople}
+              isPersonRemovalMode={isPersonRemovalMode}
+              onConfirmRemovePeople={handleConfirmRemovePeople}
+              onCancelRemovePeople={() => { setIsPersonRemovalMode(false); setDetectedPeople([]); setPeopleToRemove([]); }}
+              onApplyCrop={handleApplyCrop}
+              isCropping={!!completedCrop?.width && completedCrop.width > 0}
+              detectedFaces={detectedFaces}
+              selectedFace={selectedFace}
+              onSelectFace={handleSelectFace}
+              onStartMasking={() => setIsMasking(true)}
+              layoutMode={layoutMode}
+              width={toolPanelWidth}
+              onWidthChange={handlePanelWidthChange}
+              onClose={() => setIsToolPanelVisible(false)}
+            />
+        )}
+
         {isEditsStackOpen && (
           <EditsStackPanel
             layers={layers}

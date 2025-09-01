@@ -83,36 +83,38 @@ export const getSectionForTab = (tabId: TabId): SectionConfig | undefined => {
 
 
 interface SidebarProps {
+  isCollapsed: boolean;
   activeTabId: TabId;
   onTabSelect: (tab: TabId) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTabId, onTabSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, activeTabId, onTabSelect }) => {
   const activeSection = getSectionForTab(activeTabId);
 
   return (
-    <aside className="w-56 bg-gray-800/30 border-r border-gray-700/80 p-2 flex-shrink-0 flex flex-col gap-4">
+    <aside className={`left-rail bg-gray-800/30 border-r border-gray-700/80 p-2 flex-shrink-0 flex flex-col gap-4 transition-all duration-300 ${isCollapsed ? 'w-16 items-center' : 'w-56'}`}>
         {sections.map((section, index) => (
-            <div key={section.id}>
-                {index > 0 && <div className="h-px bg-white/10 my-2"></div>}
-                <h2 className="px-2 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <section.icon className="w-4 h-4" />
-                    {section.label}
+            <div key={section.id} className="w-full">
+                {index > 0 && <div className={`h-px bg-white/10 my-2 ${isCollapsed ? 'mx-2' : 'mx-4'}`}></div>}
+                <h2 className={`px-2 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                    <section.icon className="w-4 h-4 flex-shrink-0" />
+                    {!isCollapsed && <span>{section.label}</span>}
                 </h2>
                 <ul>
                     {section.tabs.map(tab => (
                         <li key={tab.id}>
                             <button
+                                title={isCollapsed ? tab.label : ''}
                                 onClick={() => onTabSelect(tab.id)}
-                                className={`w-full flex items-center gap-3 font-semibold p-2 my-0.5 rounded-md transition-all duration-200 text-sm whitespace-nowrap relative ${
+                                className={`w-full flex items-center gap-3 font-semibold p-2 my-0.5 rounded-md transition-all duration-200 text-sm whitespace-nowrap relative ${isCollapsed ? 'justify-center' : ''} ${
                                     activeTabId === tab.id
                                     ? 'bg-blue-600/20 text-blue-300' 
                                     : 'text-gray-300 hover:text-white hover:bg-white/10'
                                 }`}
                             >
-                                {activeTabId === tab.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-400 rounded-r-full"></div>}
-                                <tab.icon className="w-5 h-5 flex-shrink-0 ml-2" />
-                                <span>{tab.label}</span>
+                                {activeTabId === tab.id && <div className="absolute left-0 top-1 bottom-1 w-1 bg-blue-400 rounded-r-full"></div>}
+                                <tab.icon className={`w-5 h-5 flex-shrink-0 ${!isCollapsed ? 'ml-2' : ''}`} />
+                                {!isCollapsed && <span>{tab.label}</span>}
                             </button>
                         </li>
                     ))}

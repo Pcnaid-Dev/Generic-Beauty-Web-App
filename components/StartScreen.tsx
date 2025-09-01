@@ -38,7 +38,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onFileSelect }) => {
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-4">
-            <label htmlFor="image-upload-start" className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-full cursor-pointer group hover:bg-blue-500 transition-colors">
+            <label htmlFor="image-upload-start" className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-full cursor-pointer group hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30">
                 <UploadIcon className="w-6 h-6 mr-3 transition-transform duration-500 ease-in-out group-hover:rotate-[360deg] group-hover:scale-110" />
                 Upload an Image
             </label>
@@ -48,21 +48,21 @@ const StartScreen: React.FC<StartScreenProps> = ({ onFileSelect }) => {
 
         <div className="mt-16 w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
+                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
                        <SparkleIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-100">Precise Retouching</h3>
                     <p className="mt-2 text-gray-400">Click any point on your image to remove blemishes, change colors, or add elements with pinpoint accuracy.</p>
                 </div>
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
+                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
                        <PresetsIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-100">Creative Filters</h3>
                     <p className="mt-2 text-gray-400">Transform photos with artistic styles. From vintage looks to futuristic glows, find or create the perfect filter.</p>
                 </div>
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center">
+                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
                     <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
                        <LightColorIcon className="w-6 h-6 text-blue-400" />
                     </div>

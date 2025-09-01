@@ -26,21 +26,25 @@ interface FacePanelProps {
 
 const portraitTools: Record<PortraitSubTab, { name: string, prompt: string }[]> = {
     skin: [
+        { name: 'Flawless Skin', prompt: 'Perform a comprehensive but natural skin retouch on the selected face. Smooth the skin texture, even out the skin tone by reducing redness and blotches, and remove minor blemishes. The result should look like healthy, clear skin, not artificial or plastic-like.' },
         { name: 'Remove Blemish', prompt: 'Remove any obvious blemishes like pimples, spots, or acne scars from the skin on the selected face. The result should be natural and preserve skin texture.' },
         { name: 'Smooth Skin', prompt: 'Apply a gentle but effective skin smoothing effect to the selected face, reducing the appearance of fine lines and pores for a clear, healthy complexion. Preserve natural skin texture.'},
         { name: 'Even Tone', prompt: 'Even out the skin tone on the selected face, reducing redness or blotchiness for a smoother, more uniform appearance.' },
+        { name: 'Reduce Pores', prompt: 'Subtly reduce the visibility of pores on the skin for a smoother finish.' },
         { name: 'Reduce Shine', prompt: 'Reduce oily shine from the skin on the selected face, giving it a more natural, matte finish.' },
         { name: 'Soften Wrinkles', prompt: 'Subtly soften the appearance of wrinkles and crow\'s feet on the selected face. The goal is to reduce, not eliminate, for a natural look.' },
         { name: 'Add Tan', prompt: 'Apply a natural-looking, healthy tan to the skin of the selected face, ensuring it blends with the neck.'},
+        { name: 'Neutralize Redness', prompt: 'Specifically target and neutralize areas of redness on the skin for a more balanced complexion.'},
     ],
     eyes: [
         { name: 'Whiten Sclera', prompt: 'Slightly and naturally whiten the sclera (the white part) of the eyes on the selected face. The goal is to make the eyes look brighter and healthier, not artificially white.' },
+        { name: 'Brighten Iris', prompt: 'Slightly boost the brightness and vibrancy of the iris color, making the eyes look more vivid.'},
         { name: 'De-puff / Bags', prompt: 'Reduce the appearance of puffiness or bags under the eyes on the selected face for a more rested look.' },
         { name: 'Sharpen Iris', prompt: 'Enhance the detail, color, and sharpness of the iris on the selected face to make the eyes more captivating.' },
         { name: 'Add Catchlights', prompt: 'Add natural-looking catchlights (reflections of light) to the eyes on the selected face to make them sparkle and pop.' },
         { name: 'Fix Red-eye', prompt: 'Remove the red-eye effect from the eyes on the selected face, restoring a natural eye color.' },
         { name: 'Enlarge Eyes', prompt: 'Slightly enlarge the eyes on the selected face for a more expressive look. The effect must be subtle and natural.'},
-        { name: 'Change Eye Color', prompt: 'Change the eye color of the selected face to a striking hazel. The effect must be photorealistic, with natural color variations.'},
+        { name: 'Enhance Lashes', prompt: 'Make the eyelashes appear slightly longer, darker, and more defined.'},
     ],
     brows: [
         { name: 'Shape Brows', prompt: 'Gently shape and tidy the eyebrows on the selected face, removing stray hairs for a clean arch.' },
@@ -51,9 +55,10 @@ const portraitTools: Record<PortraitSubTab, { name: string, prompt: string }[]> 
     ],
     lips: [
         { name: 'Plump Lips', prompt: 'Subtly plump the lips on the selected face for a fuller, more voluminous appearance. The result must look natural and not exaggerated.' },
+        { name: 'Define Lip Line', prompt: 'Enhance the definition and outline of the lips on the selected face for a cleaner, more polished look.'},
         { name: 'Add Lip Tint', prompt: 'Apply a natural-looking, sheer color tint to the lips on the selected face, as if from a lip stain.' },
-        { name: 'Define Lips', prompt: 'Enhance the definition and outline of the lips on the selected face for a cleaner, more polished look.'},
         { name: 'Add Gloss', prompt: 'Add a realistic, glossy finish to the lips on the selected face, giving them a hydrated look.' },
+        { name: 'Matte Finish', prompt: 'Apply a matte finish to the lips, removing excess shine for a modern look.'},
         { name: 'Whiten Teeth', prompt: 'Whiten the teeth of the person in the selected face. The effect should be natural and not overly bright.' },
     ],
     nose: [
