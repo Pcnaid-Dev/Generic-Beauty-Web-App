@@ -1,161 +1,75 @@
-:root{
-  /* brand */
-  --brand:#3b82f6; /* using tailwind blue-500 */
-  --bg:#0f1623; 
-  --panel:rgba(22, 28, 41, 0.8); /* gray-800/80 for more opacity */
-  --text:#e6e8ee; 
-  --muted:#a1a6b3;
-
-  /* spacing / radius / elevation */
-  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px;
-  --r-1:8px; --r-2:12px; 
-  --shadow:0 8px 30px rgba(0,0,0,.35);
-
-  /* fixed dimensions */
-  --rail-w-expanded:224px;  /* w-56 */
-  --rail-w-collapsed:64px; /* w-16 */
-  --panel-w:472px;         /* default panel width */
-  --panel-w-min: 360px;
-  --panel-w-max: 600px;
-  --tab-h:40px;            /* tab strip */
-  --chip-h:36px;           /* option chips */
-  --apply-h:80px;          /* sticky apply bar height */
-  --hdr-h:72px;            /* panel header */
-  --panel-body-min-h:360px;/* prevents reflow */
-  --icon:20px; 
-  --btn-h:48px; /* primary buttons */
-  --header-h: 61px;
+:root {
+  --accent-pink: #ec0088;
+  --bg-dark: #101014;
+  --text-primary: #f0f0f5;
+  --text-secondary: #a0a0b0;
 }
 
-/* Base App Structure */
-.app-body {
-  display: flex;
-  height: calc(100vh - var(--header-h));
-  position: relative;
-  overflow: hidden;
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
 }
 
-.app-body.content-centered {
-    align-items: center;
-    justify-content: center;
+.glass-panel {
+  background-color: rgba(35, 35, 45, 0.5);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.left-rail { 
-    flex-shrink: 0;
-    transition: width 0.3s ease-in-out;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.canvas{ 
-    min-width: 0;
-    flex-grow: 1; 
-    overflow: auto; 
-    background: transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+/* Custom Intensity Slider */
+.intensity-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  transition: opacity .2s;
 }
 
-/* Tool Panel Base */
-.tool-panel{
-  display:grid;
-  height: 100%;
-  grid-template-rows: var(--hdr-h) 1fr var(--apply-h);
-  background: var(--panel); 
-  backdrop-filter: blur(12px);
-  border-left: 1px solid rgb(55 65 81 / 0.8);
-  flex-shrink: 0;
-  position: relative;
+.intensity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--text-primary);
+  border: 4px solid var(--accent-pink);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background .2s;
 }
 
-/* Panel Resizer */
-.panel-resizer {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -3px;
-    width: 6px;
-    cursor: col-resize;
-    z-index: 10;
+.intensity-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--text-primary);
+  border: 4px solid var(--accent-pink);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background .2s;
 }
 
-/* Layout Modes */
-.tool-panel.layout-overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 45;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.intensity-slider:hover::-webkit-slider-thumb {
+  background: #fff;
 }
-
-.tool-panel.layout-bottom-sheet {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 60vh;
-    z-index: 45;
-    border-top: 1px solid rgb(55 65 81 / 0.8);
-    border-left: none;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.tool-panel.layout-bottom-sheet .panel-resizer {
-    display: none; /* Resizing not supported on bottom sheet for now */
-}
-
-
-/* Panel Sections (re-used from previous step, confirmed compatible) */
-.panel-header,
-.panel-body,
-.panel-apply { 
-    padding: var(--s-4);
-}
-
-.panel-header{
-  display:flex; 
-  align-items:center; 
-  justify-content:space-between;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  height: var(--hdr-h);
-  flex-shrink: 0;
-}
-
-.panel-body{ 
-    overflow-y:auto; 
-    min-height: var(--panel-body-min-h);
-    padding: var(--s-4);
-}
-
-.panel-apply{
-  display:flex; 
-  gap:var(--s-4); 
-  align-items:center;
-  border-top:1px solid rgba(255,255,255,.08);
-  height: var(--apply-h);
-  flex-shrink: 0;
-}
-
-/* Common Components (re-used from previous step) */
-.primary{ 
-    height:var(--btn-h); 
-    padding:0 var(--s-6); 
-    border-radius:var(--r-2); 
-    background:linear-gradient(180deg, var(--brand), #1d4ed8); /* blue-700 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-}
-.primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #1e40af; /* blue-800 */
-}
-
-.preview{ 
-    width:44px; 
-    height:44px; 
-    border-radius:50%; 
+.intensity-slider:hover::-moz-range-thumb {
+  background: #fff;
 }

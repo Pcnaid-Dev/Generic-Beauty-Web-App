@@ -3,75 +3,79 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React, { useState } from 'react';
-// FIX: Replaced missing icons with available equivalents.
-import { UploadIcon, SparkleIcon, PresetsIcon, LightColorIcon } from './icons';
+import React, { useState, useCallback } from 'react';
+// Fix: Import 'motion' from framer-motion to enable animations.
+import { motion } from 'framer-motion';
+import { UploadIcon } from './icons';
 
 interface StartScreenProps {
-  onFileSelect: (files: FileList | null) => void;
+  onImageSelected: (file: File) => void;
 }
 
-const StartScreen: React.FC<StartScreenProps> = ({ onFileSelect }) => {
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
+const StartScreen: React.FC<StartScreenProps> = ({ onImageSelected }) => {
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFileSelect(e.target.files);
+    if (e.target.files && e.target.files[0]) {
+      onImageSelected(e.target.files[0]);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onImageSelected(e.dataTransfer.files[0]);
+    }
+  }, [onImageSelected]);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
   };
 
   return (
     <div 
-      className={`w-full max-w-5xl mx-auto text-center p-8 transition-all duration-300 rounded-2xl border-2 ${isDraggingOver ? 'bg-blue-500/10 border-dashed border-blue-400' : 'border-transparent'}`}
-      onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-      onDragLeave={() => setIsDraggingOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setIsDraggingOver(false);
-        onFileSelect(e.dataTransfer.files);
-      }}
+      className="w-full h-full flex items-center justify-center p-4"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
     >
-      <div className="flex flex-col items-center gap-6 animate-fade-in">
-        <h1 className="text-5xl font-extrabold tracking-tight text-gray-100 sm:text-6xl md:text-7xl">
-          AI-Powered Photo Editing, <span className="text-blue-400">Simplified</span>.
-        </h1>
-        <p className="max-w-2xl text-lg text-gray-400 md:text-xl">
-          Retouch photos, apply creative filters, or make professional adjustments using simple text prompts. No complex tools needed.
-        </p>
-
-        <div className="mt-6 flex flex-col items-center gap-4">
-            <label htmlFor="image-upload-start" className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-full cursor-pointer group hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30">
-                <UploadIcon className="w-6 h-6 mr-3 transition-transform duration-500 ease-in-out group-hover:rotate-[360deg] group-hover:scale-110" />
-                Upload an Image
-            </label>
-            <input id="image-upload-start" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-            <p className="text-sm text-gray-500">or drag and drop a file</p>
-        </div>
-
-        <div className="mt-16 w-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <SparkleIcon className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-100">Precise Retouching</h3>
-                    <p className="mt-2 text-gray-400">Click any point on your image to remove blemishes, change colors, or add elements with pinpoint accuracy.</p>
-                </div>
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <PresetsIcon className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-100">Creative Filters</h3>
-                    <p className="mt-2 text-gray-400">Transform photos with artistic styles. From vintage looks to futuristic glows, find or create the perfect filter.</p>
-                </div>
-                <div className="bg-black/20 p-6 rounded-lg border border-gray-700/50 flex flex-col items-center text-center shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full mb-4">
-                       <LightColorIcon className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-100">Pro Adjustments</h3>
-                    <p className="mt-2 text-gray-400">Enhance lighting, blur backgrounds, or change the mood. Get studio-quality results without complex tools.</p>
-                </div>
+      <div 
+        className={`glass-panel rounded-3xl p-8 sm:p-12 md:p-16 text-center transition-all duration-300 ${isDragging ? 'border-pink-500 scale-105' : 'border-transparent'}`}
+      >
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+        >
+            <h1 className="text-4xl sm:text-5xl font-bold text-white">AI Beauty Editor</h1>
+            <p className="mt-4 text-lg text-text-secondary max-w-md">
+                Create stunning, professional-quality portraits with the power of generative AI.
+            </p>
+            <div className="mt-8">
+                <label htmlFor="upload-button" className="inline-flex items-center justify-center px-8 py-4 bg-accent-pink text-white font-bold rounded-full cursor-pointer transition-transform duration-200 hover:scale-105 shadow-lg shadow-pink-500/20">
+                    <UploadIcon className="w-6 h-6 mr-3" />
+                    Select a photo
+                </label>
+                <input id="upload-button" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
             </div>
-        </div>
-
+            <p className="mt-4 text-sm text-text-secondary/50">or drag & drop an image anywhere</p>
+        </motion.div>
       </div>
     </div>
   );
